@@ -25,19 +25,8 @@ sub new {
    $self->_datastore( {} );
    $self->_next_id(1);
    $self->_indexes( {} );
-   $self->_unique_indexes( {} );
 
    return $self;
-}
-
-# adds an index to the datastore, assumes
-sub add_unique_index {
-   my ( $self, $fieldname ) = @_;
-
-   die "not implemented to add indexes to existing data"
-      if keys %{ $self->_datastore };
-
-   $self->_unique_indexes->{$fieldname} = {};
 }
 
 sub add_index {
@@ -94,15 +83,6 @@ sub delete {
    return;
 }
 
-# searches in the $index_field unique index for the $indexed_value
-sub get_id_by_unique_index {
-   my ( $self, $indexed_value, $indexed_field) = @_;
-
-   die "No unique index named $indexed_field"
-      if !$self->_unique_indexes->{$indexed_field};
-   return $self->_unique_indexes->{$indexed_field}->{$indexed_value};
-}
-
 # searches in the $index_field index for the $indexed_value, returns array ref
 #  of all ids found in the index for the indexed_value
 sub get_ids_by_index {
@@ -130,16 +110,11 @@ sub _increment_next_id {
 sub _delete_index_values {
    my ( $self, $id, $data ) = @_;
 
-   return unless keys %{$self->_unique_indexes} || keys %{$self->_indexes};
+   return unless keys %{$self->_indexes};
    
    die 'Cannot index $data that is not an object'
       unless ref $data && blessed $data;
    
-   while ( my ( $idx_name, $index ) = each %{ $self->_unique_indexes } ) {
-      delete $index->{ $data->$idx_name }
-         if defined $data->$idx_name;
-   }
-
 INDEX:
    while ( my ( $idx_name, $index ) = each %{ $self->_indexes } ) {
       next INDEX
@@ -155,15 +130,10 @@ INDEX:
 sub _add_index_values {
    my ( $self, $id, $data ) = @_;
 
-   return unless keys %{$self->_unique_indexes} || keys %{$self->_indexes};
+   return unless keys %{$self->_indexes};
 
    die 'Cannot index $data that is not an object'
       unless ref $data && blessed $data;
-
-   while ( my ( $idx_name, $index ) = each %{ $self->_unique_indexes } ) {
-      $index->{ $data->$idx_name } = $id
-         if defined $data->$idx_name;
-   }
 
 INDEX:
    while ( my ( $idx_name, $index ) = each %{ $self->_indexes } ) {
@@ -195,16 +165,6 @@ sub _next_id {
    }
 
    return $self->{next_id};
-}
-
-sub _unique_indexes {
-   my ( $self, $val ) = @_;
-
-   if ( @_ == 2 ) {
-      $self->{_unique_indexes} = $val;
-   }
-
-   return $self->{_unique_indexes};
 }
 
 sub _indexes {

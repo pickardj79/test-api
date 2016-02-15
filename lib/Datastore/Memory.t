@@ -11,7 +11,6 @@ use Test::More tests => 2;
 my $TEST_PACKAGE = build_test_package();
 
 subtest 'basic retrieve/replace/create/delete' => \&test_basic_functionality;
-#subtest 'unique indexing'                      => \&test_unique_indexing;
 subtest 'indexing'                             => \&test_indexing;
 
 sub test_basic_functionality {
@@ -48,36 +47,6 @@ sub test_basic_functionality {
 
    # test that deleting an unknown key doesn't die
    $store1->delete(2);
-}
-
-sub test_unique_indexing {
-   plan tests => 7;
-   
-   my $store = Datastore::Memory->new();
-   $store->add_unique_index('field1', 'unused index');
-   $store->add_unique_index('field2');
-
-   my $val1_id = $store->insert( { field1 => 'val1' } ); 
-   my $val2_id = $store->insert( { field2 => 'val2' } ); 
-
-   is($store->get_id_by_unique_index('val1', 'field1'), $val1_id, 'got by index 1');
-   is($store->get_id_by_unique_index('val2', 'field1'), undef, 'got no id for index 1');
-   is($store->get_id_by_unique_index('val2', 'field2'), $val2_id, 'got by index 2');
-
-   $store->delete($val1_id);
-   is($store->get_id_by_unique_index('val1', 'field1'), undef, 
-      'index cleared after delete');
-
-   $store->replace($val2_id, { field1 => 'data now in field1' } );
-   is($store->get_id_by_unique_index('val2', 'field2'), undef, 
-      'replace removed old index');
-   is($store->get_id_by_unique_index('data now in field1', 'field1'), $val2_id,
-      'replace added new index value');
-   
-   is_deeply($store->_unique_indexes, {
-      'field1' => { 'data now in field1' => $val2_id },
-      'field2' => {},
-   }, 'indexes look good' );
 }
 
 sub test_indexing {
