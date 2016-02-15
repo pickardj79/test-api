@@ -10,8 +10,6 @@ use AssetAPI;
 use CGI::Util qw(escape);
 use Test::More tests => 3;
 
-my $api = AssetAPI->new();
-
 # pass a method, uri and body
 # return code and message
 
@@ -27,6 +25,10 @@ subtest '404 errors' => \&test_404_responses;
 subtest '400 errors' => \&test_400_responses;
 
 sub test_basic_functionality {
+   plan tests => 38;
+
+   my $api = AssetAPI->new();
+
    # format of @tests:
    # [ method, uri, body, expected return code, expected return body ]
    my @tests = (
@@ -57,6 +59,10 @@ sub test_basic_functionality {
       [ 'GET', '/assets/2/notes', undef, 200,
          [ { %$note2, assetid => 2 }, { %$note1, assetid => 2 } ]
       ],
+      [ 'DELETE', '/assets/2', undef, 200, ],
+      [ 'GET', '/assets', undef, 200, [] ],
+      [ 'POST', '/assets', $asset1, 201, { id => 3 } ],
+      [ 'GET', '/assets/3/notes', undef, 200, [] ],
    );
 
    foreach my $test (@tests) {
@@ -73,6 +79,8 @@ sub test_basic_functionality {
 sub test_404_responses {
    plan tests => 8;
 
+   my $api = AssetAPI->new();
+   
    # [ method, uri, body, regexp for expected error message]
    # assumed that message body is hash ref with error key;
    # assumed that return code is 404
@@ -85,11 +93,18 @@ sub test_404_responses {
       [ 'GET', '/assets/3/notes', undef, qr/^Could not find asset with assetid '3'/ ],
    );
    
-   run_error_tests(\@err_tests, 404);
+   run_error_tests($api, \@err_tests, 404);
 }
 
 sub test_400_responses {
-   plan tests => 38;
+   plan tests => 40;
+   
+   my $api = AssetAPI->new();
+   my ( $code, $body ) = $api->process_request( 'POST', '/assets', $asset1 );
+
+   is($code, 201, 'created asset okay');
+   is_deeply($body, { id => 2 }, 'created response body');
+
    # [ method, uri, body, regexp for expected error message]
    # assumed that message body is hash ref with error key;
    # assumed that return code is 404
@@ -114,11 +129,11 @@ sub test_400_responses {
       [ 'DELETE', '/assets', undef, qr/assetid required for delete/ ],
       [ 'DELETE', '/assets/2', {}, qr/Cannot use DELETE with a message body/ ],
    ); 
-   run_error_tests(\@err_tests, 400);
+   run_error_tests($api, \@err_tests, 400);
 }
 
 sub run_error_tests {
-   my ($tests, $exp_code) = @_;
+   my ($api, $tests, $exp_code) = @_;
 
    # $tests is an arrayref of arrayrefs. Each arrayref is of the form:
    # [ method, uri, body, regexp for expected error message]
