@@ -5,6 +5,7 @@ use warnings FATAL => 'all';
 
 use English qw(-no_match_vars);
 use Data::Dumper;
+use IO::Select;
 use IO::Socket::INET;
 
 # Runs a server listening to request to localhost
@@ -15,6 +16,7 @@ use IO::Socket::INET;
 $| = 1;
 
 my $DEFAULT_LISTEN_QUEUE_SIZE = 5;
+my $BLOCK_SIZE = 2048;
 
 my ($port, $listen_queue) = validate_and_extract_inputs(@ARGV);
 
@@ -35,18 +37,24 @@ print "Ctrl-C terminates program\n";
 while (1) {
    my $cl_socket = $socket->accept();
    
-# TODO: loop through entire request... or try without the 1024
-   my $cl_request;
-   $cl_socket->recv($cl_request, 1024);
+   my $wait = IO::Select->new() ;
+   $wait->add($cl_socket) ;
    
-# TODO: convert $cl_request into HTTP - need HTTPMessage class
-# TODO: sent method, path, payload to API, recieve code, optional message, payload
-# TODO: create new HTTPMessage with code, payload, optional message
-# TODO: return this HTTPMessage
+   my $cl_request = '';
+   while ( $wait->can_read(0) ) {
+      my $cur_read;
+      $cl_socket->recv($cur_read, $BLOCK_SIZE);
+      
+      $cl_request .= $cur_read;
+
+      last unless $cur_read;
+   }
+
 # TODO: clean this up
-   print "got " . ($cl_request //= '<undef>') . "\n";
+   print "got " . ($cl_request //= '<undef>') . "\n\n";
    
    $cl_socket->send("Hey there, you sent me \n$cl_request");
+   $cl_socket->close;
 }
 
 ################
@@ -90,5 +98,9 @@ sub is_positive_int {
    return unless $x = int($x);
    return unless $x > 0;
    return 1;
+}
+
+END {
+   $socket->close if $socket;
 }
 

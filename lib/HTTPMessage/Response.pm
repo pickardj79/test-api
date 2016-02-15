@@ -37,11 +37,18 @@ my %FIELDS = (
 # payload (match content-length/type)
 
 my %REASON_PHRASE = (
-   200 => 'OK',
-   201 => 'Created',
-   400 => 'Bad Request',
-   404 => 'Not Found',
+   STATUS_OK()          => 'OK',
+   STATUS_CREATED()     => 'Created',
+   STATUS_BAD_REQUEST() => 'Bad Request',
+   STATUS_NOT_FOUND()   => 'Not Found',
+   STATUS_CONFLICT()    => 'Conflict',
 );
+
+sub STATUS_OK          { 200 }
+sub STATUS_CREATED     { 201 }
+sub STATUS_BAD_REQUEST { 400 }
+sub STATUS_NOT_FOUND   { 404 }
+sub STATUS_CONFLICT    { 409 }
 
 sub new {
    my ($class, $args) = @_;
@@ -66,30 +73,34 @@ sub as_string {
    my ($self) = @_;
 
    my $content = $self->content;
+   my $contenttype;
 
    # convert hashref and arrayref content into json
    if ( UNIVERSAL::isa($content, 'ARRAY') || UNIVERSAL::isa($content, 'HASH') ) {
       $content = encode_json( $content );   
+      $contenttype = 'application/json';
    }
    else {
-      $content = encode_utf8( $content );
+      $content = encode_utf8( $content )
+         if $content;
+      $contenttype = 'text/html';
    }
 
 
    my $response = join("\n",
       join(" ", "HTTP/1.1", $self->status_code, $REASON_PHRASE{$self->status_code} || ''),
-      "Content-Length: " . length($self->content || ''),
-      "Content-Type: application/json",
+      "Content-Length: " . length($content || ''),
+      "Content-Type: $contenttype",
       "Connection: Closed",
-      "",
-      $content,
    );
+   $response .= "\n\n$content"
+      if defined $content;
 
    return $response;
 
 }
 
-# accessorts
+# accessors
 sub status_code {
    my ($self, $val) = @_;
 
