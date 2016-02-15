@@ -22,41 +22,37 @@ use JSON::PP;
 # example request:
 #POST /cgi-bin/process.cgi HTTP/1.1
 #User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)
-#Host: www.tutorialspoint.com
+#Host: www.example.com
 #Connection: Keep-Alive
 #
 #message-body
 
 
-# instantiates an object from a request_string
-sub new_from_string {
-   my ($class, $request_string) = @_;
-
-   my $self = $class->new();
-
-   my @request_lines = split("\n", $request_string);
-
-   my $line_idx = 0;
-
+sub init_from_first_line {
+   my ($self, $first_line) = @_;
+   
    # first line has method and uri; assume this is HTTP/1.1
-   my ($method, $uri) = split(qr/\s+/, $request_lines[$line_idx]);
+   my ($method, $uri) = split(qr/\s+/, $first_line);
 
    $self->method($method);
    $self->uri($uri);
-   
-   # skip header lines - look for CRLF
-   while ( ++$line_idx < scalar @request_lines ) { 
-      last if $request_lines[$line_idx] =~ m/^$/;
-   }
 
-   # the rest is the body
-   if (++$line_idx <= $#request_lines) {
-      my $encoded_message 
-         = join("\n", @request_lines[$line_idx .. $#request_lines]);
-      $self->message( decode_json($encoded_message) );
-   }
+   return;
+}
 
-   return $self;
+sub as_string {
+   my ($self) = @_;
+
+   my $request_str = join("\n", $self->method . " " . $self->uri . " HTTP/1.1",
+      "User-Agent: Mozilla/4.0",
+      "Host: www.example.com",
+      "Connection: Keep-Alive",
+   );
+
+   $request_str .= "\n\n" .  encode_json($self->message)
+      if $self->message;
+
+   return $request_str;
 }
 
 # accessors

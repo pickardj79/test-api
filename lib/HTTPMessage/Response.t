@@ -12,14 +12,14 @@ use JSON::PP;
 use Test::More tests => 4;
 
 my $utf_bytes = encode_utf8("\x{2122}");
-my $content = {
+my $message = {
    'message-body' => 'a val',
    'line2' => $utf_bytes
 };
 
 my $response = HTTPMessage::Response->new( {
    status_code => 200,
-   content => "text\x{2122}",
+   message => "text\x{2122}",
 } );
 
 is($response->as_string,
@@ -34,7 +34,7 @@ text' . $utf_bytes,
 
 my $response2 = HTTPMessage::Response->new( {
    status_code => 400,
-   content => { ahash => 'isjson' },
+   message => { ahash => 'isjson' },
 } );
 
 is($response2->as_string,
@@ -48,7 +48,7 @@ Connection: Closed
 
 my $response3 = HTTPMessage::Response->new( {
    status_code => 302,
-   content => [ 'anarray',  'also json' ],
+   message => [ 'anarray',  'also json' ],
 } );
 
 is($response3->as_string,

@@ -14,12 +14,12 @@ use JSON::PP;
 
 # Fields
 # status_code - http status code
-# content - message body, can be scalar, hashref, or arrayref; 
+# message - message body, can be scalar, hashref, or arrayref; 
 #  automatically converts arrayref and hashref to json
 
 my %FIELDS = ( 
    status_code => 1,
-   content => 1,
+   message => 1,
 );
 
 # Subs
@@ -42,6 +42,7 @@ my %REASON_PHRASE = (
    STATUS_BAD_REQUEST() => 'Bad Request',
    STATUS_NOT_FOUND()   => 'Not Found',
    STATUS_CONFLICT()    => 'Conflict',
+   STATUS_INTERNAL_ERROR() => 'Internal Server Error',
 );
 
 sub STATUS_OK          { 200 }
@@ -49,6 +50,7 @@ sub STATUS_CREATED     { 201 }
 sub STATUS_BAD_REQUEST { 400 }
 sub STATUS_NOT_FOUND   { 404 }
 sub STATUS_CONFLICT    { 409 }
+sub STATUS_INTERNAL_ERROR { 500 }
 
 sub new {
    my ($class, $args) = @_;
@@ -69,32 +71,41 @@ sub new {
    return $self;
 }
 
+sub init_from_first_line {
+   my ($self, $first_line) = @_;
+
+   my (undef, $code, $msg) = split(qr/\s+/, $first_line);
+   $self->status_code($code);
+
+   return;
+}
+
 sub as_string {
    my ($self) = @_;
 
-   my $content = $self->content;
+   my $message = $self->message;
    my $contenttype;
 
    # convert hashref and arrayref content into json
-   if ( UNIVERSAL::isa($content, 'ARRAY') || UNIVERSAL::isa($content, 'HASH') ) {
-      $content = encode_json( $content );   
+   if ( UNIVERSAL::isa($message, 'ARRAY') || UNIVERSAL::isa($message, 'HASH') ) {
+      $message = encode_json( $message );   
       $contenttype = 'application/json';
    }
    else {
-      $content = encode_utf8( $content )
-         if $content;
+      $message = encode_utf8( $message )
+         if $message;
       $contenttype = 'text/html';
    }
 
 
    my $response = join("\n",
       join(" ", "HTTP/1.1", $self->status_code, $REASON_PHRASE{$self->status_code} || ''),
-      "Content-Length: " . length($content || ''),
+      "Content-Length: " . length($message || ''),
       "Content-Type: $contenttype",
       "Connection: Closed",
    );
-   $response .= "\n\n$content"
-      if defined $content;
+   $response .= "\n\n$message"
+      if defined $message;
 
    return $response;
 
@@ -109,17 +120,6 @@ sub status_code {
    }
 
    return $self->{status_code};
-}
-
-
-sub content {
-   my ($self, $val) = @_;
-
-   if (@_ == 2) {
-      $self->{content} = $val;
-   }
-
-   return $self->{content};
 }
 
 1;
