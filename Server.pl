@@ -3,24 +3,28 @@
 use strict;
 use warnings FATAL => 'all';
 
+use lib 'lib';
+
+use AssetServer;
 use English qw(-no_match_vars);
-use Data::Dumper;
 use IO::Select;
 use IO::Socket::INET;
 
 # Runs a server listening to request to localhost
 # USAGE: perl Server.pl PORTNUMBER [QUEUESIZE]
 
-# TODO: do we need this?
 # set autoflush on
 $| = 1;
 
 my $DEFAULT_LISTEN_QUEUE_SIZE = 5;
+my $TIMEOUT_SECS = 5;
 my $BLOCK_SIZE = 2048;
 
 my ($port, $listen_queue) = validate_and_extract_inputs(@ARGV);
 
 my $host = '127.0.0.1';
+
+my $apiserver = AssetServer->new();
 
 my $socket = IO::Socket::INET->new(
    LocalHost => $host,
@@ -29,31 +33,43 @@ my $socket = IO::Socket::INET->new(
    Listen    => $listen_queue,
 ) || die "ERROR in Socket Creation: $!\n";
 
-print Dumper $socket;
-
 print "Listening at $host:$port\n";
 print "Ctrl-C terminates program\n";
 
 while (1) {
+   # accept a connection from a client
    my $cl_socket = $socket->accept();
    
    my $wait = IO::Select->new() ;
    $wait->add($cl_socket) ;
    
    my $cl_request = '';
-   while ( $wait->can_read(0) ) {
+   my $start = time;
+   my $timeout = 0;
+
+READ:
+   while ( $wait->can_read(0) || !$cl_request ) {
       my $cur_read;
       $cl_socket->recv($cur_read, $BLOCK_SIZE);
       
       $cl_request .= $cur_read;
 
-      last unless $cur_read;
+      last READ unless $cur_read;
+
+      if ( time - $start > $TIMEOUT_SECS ) {
+         my $timeout = 1;
+         last READ;
+      }
    }
 
-# TODO: clean this up
-   print "got " . ($cl_request //= '<undef>') . "\n\n";
-   
-   $cl_socket->send("Hey there, you sent me \n$cl_request");
+   if (!$timeout) {
+      # process request through api
+      my $response = $apiserver->process_request($cl_request);
+
+      # return response to client and close connection
+      $cl_socket->send($response);
+   }
+
    $cl_socket->close;
 }
 
