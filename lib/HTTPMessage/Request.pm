@@ -5,7 +5,6 @@ use base qw(HTTPMessage);
 use strict;
 use warnings FATAL => 'all';
 
-use Data::Dumper;
 use English qw(-no_match_vars);
 use JSON::PP;
 
@@ -27,6 +26,7 @@ use JSON::PP;
 #
 #message-body
 
+sub fields { return [ qw(method uri message) ] }
 
 sub init_from_first_line {
    my ($self, $first_line) = @_;

@@ -5,7 +5,6 @@ use warnings FATAL => 'all';
 
 use lib 'lib';
 
-use Data::Dumper;
 use DataObject::AssetNote;
 use English qw(-no_match_vars);
 use Test::More tests => 4;

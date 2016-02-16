@@ -5,9 +5,9 @@ use warnings FATAL => 'all';
 
 use lib 'lib';
 
-use Data::Dumper;
 use AssetAPI;
 use CGI::Util qw(escape);
+use Data::Dumper;
 use Test::More tests => 3;
 
 # pass a method, uri and body
@@ -59,7 +59,7 @@ sub test_basic_functionality {
       [ 'GET', '/assets/2/notes', undef, 200,
          [ { %$note2, assetid => 2 }, { %$note1, assetid => 2 } ]
       ],
-      [ 'DELETE', '/assets/2', undef, 200, ],
+      [ 'DELETE', '/assets/2', undef, 204, ],
       [ 'GET', '/assets', undef, 200, [] ],
       [ 'POST', '/assets', $asset1, 201, { id => 3 } ],
       [ 'GET', '/assets/3/notes', undef, 200, [] ],
@@ -77,7 +77,7 @@ sub test_basic_functionality {
 }
 
 sub test_404_responses {
-   plan tests => 8;
+   plan tests => 12;
 
    my $api = AssetAPI->new();
    
@@ -91,6 +91,8 @@ sub test_404_responses {
          undef, qr/with asset_uri = 'not_an_asset'/
       ],
       [ 'GET', '/assets/3/notes', undef, qr/^Could not find asset with assetid '3'/ ],
+      [ 'POST', '/assets/3/notes', {}, qr/^Could not find asset with assetid '3'/ ],
+      [ 'DELETE', '/assets/3', undef, qr/^Could not find asset with assetid '3'/ ],
    );
    
    run_error_tests($api, \@err_tests, 404);
@@ -117,7 +119,7 @@ sub test_400_responses {
       [ 'GET', '/', undef, qr/path must be of form/ ],
       [ 'GET', '/', undef, qr/path must be of form/ ],
       [ 'GET', '/assets/3?key=val', undef, qr/cannot specify an asset id and an asset query param/ ],
-      [ 'GET', '/notes', undef, qr/query param required for notes request/ ],
+      [ 'GET', '/notes', undef, qr/query param required for \/notes request/ ],
       [ 'GET', '/assets?key=val&key2=val2', undef, qr/only one query param allowed/ ],
       [ 'GET', '/assets?key=val', undef, qr/allowed query params are/ ],
       [ 'GET', '/assets', {}, qr/Cannot use GET with a message body/ ],

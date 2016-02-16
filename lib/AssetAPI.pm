@@ -3,10 +3,8 @@ package AssetAPI;
 use strict;
 use warnings FATAL => 'all';
 
-#TODO: remove all data::dumpers, DB::single too
-use Data::Dumper;
-
 use CGI::Util qw(unescape);
+use Data::Dumper;
 use DataObject::Asset;
 use DataObject::AssetNote;
 use Datastore::Memory;
@@ -100,7 +98,7 @@ sub _analyze_uri {
    die "$BAD_REQUEST_MSG: cannot specify an asset id and an asset query param"
       if @$paths > 1 && keys %$params;
 
-   die "$BAD_REQUEST_MSG: query param required for notes request"
+   die "$BAD_REQUEST_MSG: query param required for /notes request"
       if $paths->[0] eq 'notes' && !keys %$params;
    
    die "$BAD_REQUEST_MSG: only one query param allowed"
@@ -283,7 +281,7 @@ sub _process_delete {
 
    $self->_datastore_assets->delete($assetid);
 
-   return (HTTPMessage::Response::STATUS_OK, undef);
+   return (HTTPMessage::Response::STATUS_NO_CONTENT, undef);
 }
 
 # accessors

@@ -5,7 +5,6 @@ use warnings FATAL => 'all';
 
 use lib 'lib';
 
-use Data::Dumper;
 use DataObject::Asset;
 use Test::More tests => 4;
 

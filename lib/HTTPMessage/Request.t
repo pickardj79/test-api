@@ -5,7 +5,6 @@ use warnings FATAL => 'all';
 
 use lib 'lib';
 
-use Data::Dumper;
 use Encode;
 use HTTPMessage::Request;
 use JSON::PP;

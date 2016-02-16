@@ -5,7 +5,6 @@ use base qw(HTTPMessage);
 use strict;
 use warnings FATAL => 'all';
 
-use Data::Dumper;
 use Encode;
 use English qw(-no_match_vars);
 use JSON::PP;
@@ -39,6 +38,7 @@ my %FIELDS = (
 my %REASON_PHRASE = (
    STATUS_OK()          => 'OK',
    STATUS_CREATED()     => 'Created',
+   STATUS_NO_CONTENT()  => 'No Content',
    STATUS_BAD_REQUEST() => 'Bad Request',
    STATUS_NOT_FOUND()   => 'Not Found',
    STATUS_CONFLICT()    => 'Conflict',
@@ -47,29 +47,13 @@ my %REASON_PHRASE = (
 
 sub STATUS_OK          { 200 }
 sub STATUS_CREATED     { 201 }
+sub STATUS_NO_CONTENT  { 204 }
 sub STATUS_BAD_REQUEST { 400 }
 sub STATUS_NOT_FOUND   { 404 }
 sub STATUS_CONFLICT    { 409 }
 sub STATUS_INTERNAL_ERROR { 500 }
 
-sub new {
-   my ($class, $args) = @_;
-
-   die "\$args must be a hash ref"
-      if $args && !UNIVERSAL::isa($args, 'HASH');
-   foreach my $key ( keys %{$args || {}} ) {
-      die "Unknown arg $key in \$args, got: " . Dumper $args
-         unless $FIELDS{$key}; 
-   }
-
-   my $self = $class->SUPER::new($args);
-   
-   foreach my $field ( keys %FIELDS ) {
-      $self->$field( $args->{$field} );
-   }
-
-   return $self;
-}
+sub fields { return [ qw(status_code message) ] }
 
 sub init_from_first_line {
    my ($self, $first_line) = @_;

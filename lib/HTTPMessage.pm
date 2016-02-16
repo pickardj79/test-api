@@ -3,6 +3,7 @@ package HTTPMessage;
 use strict;
 use warnings FATAL => 'all';
 
+use Data::Dumper;
 use English qw(-no_match_vars);
 use JSON::PP;
 
@@ -13,7 +14,21 @@ use JSON::PP;
 sub new {
    my ($class, $args) = @_;
 
-   return bless {}, $class;
+   die "\$args must be a hash ref"
+      if $args && !UNIVERSAL::isa($args, 'HASH');
+   
+   my $self = bless {}, $class;
+   
+   foreach my $key ( keys %{$args || {}} ) {
+      die "Unknown arg $key in \$args, got: " . Dumper $args
+         unless grep { $key eq $_ } @{$self->fields}; 
+   }
+   
+   foreach my $field ( @{$self->fields} ) {
+      $self->$field( $args->{$field} );
+   }
+
+   return $self;
 }
 
 # instantiates an object from a HTTP string 
@@ -30,7 +45,7 @@ sub new_from_string {
    
    # skip header lines - look for CRLF
    while ( ++$line_idx < scalar @request_lines ) { 
-      last if $request_lines[$line_idx] =~ m/^$/;
+      last if $request_lines[$line_idx] =~ m/^\s*$/;
    }
 
    # the rest is the body
@@ -48,6 +63,8 @@ sub init_from_first_line {
    my ($self, $first_line) = @_;
    die "Virtual sub, override in subclass";
 }
+
+sub fields { die "Virtual sub, override in subclass" }
 
 # accessors
 sub message {
