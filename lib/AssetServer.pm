@@ -22,6 +22,9 @@ sub new {
    return $self;
 }
 
+# Takes an HTTP request as a string, parses from it the method, uri, and message body,
+#  and uses the _api object to process
+# Returns an HTTP response as a string
 sub process_request {
    my ( $self, $request ) = @_;
 

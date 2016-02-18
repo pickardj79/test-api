@@ -16,11 +16,6 @@ use JSON::PP;
 # message - message body, can be scalar, hashref, or arrayref; 
 #  automatically converts arrayref and hashref to json
 
-my %FIELDS = ( 
-   status_code => 1,
-   message => 1,
-);
-
 # Subs
 # as_string - builds string representation of an http response from the object 
 

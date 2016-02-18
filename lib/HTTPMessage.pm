@@ -10,6 +10,15 @@ use JSON::PP;
 # Base class for HTTP Messages (requests and responses)
 
 # Fields
+# message: message body of HTTP Message
+
+# parses first line of message, filling appropriate fields of $self
+sub init_from_first_line { 
+   my ($self, $first_line) = @_;
+   die "Virtual sub, override in subclass";
+}
+
+sub fields { die "Virtual sub, override in subclass" }
 
 sub new {
    my ($class, $args) = @_;
@@ -57,14 +66,6 @@ sub new_from_string {
 
    return $self;
 }
-
-# parses first line of message, filling appropriate fields of $self
-sub init_from_first_line { 
-   my ($self, $first_line) = @_;
-   die "Virtual sub, override in subclass";
-}
-
-sub fields { die "Virtual sub, override in subclass" }
 
 # accessors
 sub message {

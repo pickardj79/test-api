@@ -7,16 +7,23 @@ use warnings FATAL => 'all';
 
 use Scalar::Util qw(blessed);
 
+# In-memory datastore, uses autoincrement id for insert requests
+
 # Fields
 # _datastore - hashref of id => data,
 #    data can be of any type, but only objects can be indexed (see below)
 # _next_id - int of the next id to assign
 # _indexes - stores indexes of field value to object ids
-#    is a hashref, keyed on the field name, 
-#      value is a hashref that has keys of the indexed value
-#      value of that is a hashref with keys of object ids, value is unused
+#    _indexes is a hashref, keyed on the name of the indexed field;
+#      value is a hashref that has keys as values of the indexed field;
+#      values of that is a hashref with keys of object ids, value is unused
 #    field name is the name of the sub of the stored object that returns the
-#      value that should be indexed
+#      value that should be indexed, normally a field
+#  example: 
+#  _indexes = {
+#     indexed_field_name1 => { value1 => { id1 => 1, id2 => 1 }, value2 => { id2 => 1 } },
+#     indexed_field_name2 => { valuea => { id1 => 1 } },
+#  }
 
 sub new {
    my ($class) = @_;
@@ -106,7 +113,7 @@ sub _increment_next_id {
    return;
 }
 
-# deletes from all indexes the keys associated with each key in $data
+# deletes from all indexes the ids associated with each indexed field in $data
 sub _delete_index_values {
    my ( $self, $id, $data ) = @_;
 
@@ -122,11 +129,13 @@ INDEX:
       
       delete $index->{ $data->$idx_name }->{$id};
 
+      # remove the value of the indexed field if no more ids are indexed by it
       delete $index->{ $data->$idx_name }
          if !keys %{ $index->{ $data->$idx_name } };
    }
 }
 
+# adds $id to all indexed fields that have a value in $data
 sub _add_index_values {
    my ( $self, $id, $data ) = @_;
 

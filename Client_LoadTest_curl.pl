@@ -9,6 +9,19 @@ use English qw(-no_match_vars);
 use JSON::PP;
 use Time::HiRes qw(sleep time);
 
+# Script to load test an active AssetServer running on 127.0.0.1:PORTNUMBER 
+# Reports time required to run api requests
+
+# USAGE: perl Client_LoadTest_curl.pl PORTNUMBER [NUMBER OF ITERATIONS] 
+
+# NOTE: uses curl program to make requests, curl must be in $PATH 
+
+# For every interation:
+#  creates an asset, adds a note to that asset, requests a random asset,
+#  requests the notes for that random asset, searches for that random asset
+#  by name and then by uri.
+# Every 4th iteration, deletes asset that was chosen randomly
+
 my $DEFAULT_NUM_ITER = 100;
 my ($port, $num_iter) = validate_and_extract_inputs(@ARGV);
 
@@ -30,10 +43,6 @@ while (++$ctr < $num_iter) {
    my $new_note = { assetid => $new_asset->{id}, note => "this is a note" };
    make_request('POST', "/assets/$new_asset->{id}/notes", $new_note );
    
-   # get all assets and notes
-   #make_request('GET', '/assets');
-   #make_request('GET', '/notes');
-
    # get a random asset by id, and search by each name and uri; then get its notes
    my $assetid = (keys %assets)[0];
    make_request('GET', "/assets/$assetid");
@@ -46,14 +55,9 @@ while (++$ctr < $num_iter) {
       make_request('DELETE', "/assets/$assetid");
       delete $assets{$assetid};
    }
-
-   # Sleep for 0-1 secdonds
-   #my $sleeptime = rand();
-   #sleep $sleeptime;
-   #$total_sleep += $sleeptime;
 }
 
-print "Made " . ($ctr * 7) . " requests in " . (time - $start - $total_sleep) . " seconds\n";
+print "Made " . ($ctr * 6.25) . " requests in " . (time - $start - $total_sleep) . " seconds\n";
 
 sub make_request {
    my ($method, $uri, $content) = @_;

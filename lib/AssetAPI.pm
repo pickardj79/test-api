@@ -26,6 +26,8 @@ sub new {
    my ($class) = @_;
 
    my $self = bless {}, $class;
+
+   # create datastore objects
    $self->_datastore_assets( Datastore::Memory->new() );
    $self->_datastore_notes( Datastore::Memory->new() );
 
@@ -37,6 +39,8 @@ sub new {
    return $self;
 }
 
+# processes a request defined by $method, $uri, and $request_body
+# returns (HTTP Response Code, Response Body)
 # path is of the form: /assets/[id]/[notes]?[optional query]
 # query is of the form: ?assetname=%-encoded name
 #                   or: ?asseturi=%-encododed uri
@@ -49,8 +53,10 @@ sub process_request {
       die "$BAD_REQUEST_MSG: unsupported HTTP method"
          if !first { $method eq $_ } qw(GET POST DELETE);
       
+      # extract the assetid and whether or not this is a notes request from the uri
       my ($assetid, $is_notes_request) = $self->_analyze_uri($uri);
       
+      # handle request based on HTTP Method
       if ($method eq 'GET') {
          ($code, $message) 
             = $self->_process_get($assetid, $is_notes_request, $request_body);
@@ -63,11 +69,10 @@ sub process_request {
          ($code, $message) 
             = $self->_process_delete($assetid, $is_notes_request, $request_body);
       }
-      else {
-      }
    };
    
    if (my $err = $EVAL_ERROR) {
+      # Certain error string signify a specific response code
       if ($err =~ qr/^$BAD_REQUEST_MSG/) {
          return (HTTPMessage::Response::STATUS_BAD_REQUEST, { error => $err } );
       }
@@ -134,6 +139,7 @@ sub _analyze_uri {
    return ($assetid, $is_notes_request);
 }
 
+# parses a uri into an array of paths and a hash of query parameters
 sub _parse_uri {
    my ($self, $uri) = @_;
 
@@ -223,6 +229,7 @@ sub _process_post {
 
    my $id;
    if ($is_notes_request) {
+      # create a new note attached to the Asset identified by $assetid
       die "$BAD_REQUEST_MSG: cannot create notes without an assetid"
          unless defined $assetid;
 
@@ -238,6 +245,7 @@ sub _process_post {
       $id = $self->_datastore_notes->insert( $note );
    }
    else {
+      # create a new asset, verify uri and name of new asset are unique
       die "$BAD_REQUEST_MSG: cannot specify an assetid when creating an asset"
          if defined $assetid;
 
@@ -279,6 +287,7 @@ sub _process_delete {
    die "$BAD_REQUEST_MSG: Cannot use DELETE with a message body"
       if $request_body;
 
+   # delete the asset from the datastore
    $self->_datastore_assets->delete($assetid);
 
    return (HTTPMessage::Response::STATUS_NO_CONTENT, undef);

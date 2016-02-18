@@ -10,7 +10,7 @@ use English qw(-no_match_vars);
 use IO::Select;
 use IO::Socket::INET;
 
-# Runs a server listening to request to localhost
+# Runs a AssetServer listening for requests on 127.0.0.1:PORTNUMBER
 # USAGE: perl Server.pl PORTNUMBER [QUEUESIZE]
 
 # set autoflush on
@@ -26,6 +26,7 @@ my $host = '127.0.0.1';
 
 my $apiserver = AssetServer->new();
 
+# Create socket listening on specified port
 my $socket = IO::Socket::INET->new(
    LocalHost => $host,
    LocalPort => $port,
@@ -36,6 +37,7 @@ my $socket = IO::Socket::INET->new(
 print "Listening at $host:$port\n";
 print "Ctrl-C terminates program\n";
 
+# Wait for requests indefinately
 while (1) {
    # accept a connection from a client
    my $cl_socket = $socket->accept();
@@ -47,6 +49,7 @@ while (1) {
    my $start = time;
    my $timeout = 0;
 
+   # Read data from client
 READ:
    while ( $wait->can_read(0) || !$cl_request ) {
       my $cur_read;
@@ -66,10 +69,11 @@ READ:
       # process request through api
       my $response = $apiserver->process_request($cl_request);
 
-      # return response to client and close connection
+      # return response to client
       $cl_socket->send($response);
    }
 
+   # close connection
    $cl_socket->close;
 }
 

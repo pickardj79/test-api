@@ -5,7 +5,7 @@ use warnings FATAL => 'all';
 
 # Baseclass / interface for datamodel classes
 
-# list of fields that musts be defined to instantiate an object of the subclass
+# list of fields that must be defined to instantiate an object of the subclass
 sub required_fields { "Virtural sub, defined in subclass" }
 
 sub new {
@@ -27,6 +27,7 @@ sub new {
    return $self;
 }
 
+# convert the object to a hash representation
 sub hashify {
    my ($self) = @_;
 

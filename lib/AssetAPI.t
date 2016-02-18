@@ -10,9 +10,6 @@ use CGI::Util qw(escape);
 use Data::Dumper;
 use Test::More tests => 3;
 
-# pass a method, uri and body
-# return code and message
-
 my $asset1      = { name => 'Ms. Swift', uri => 'myorg:://users/tswift' };
 my $asset1_name = escape( $asset1->{name} );
 my $asset1_uri  = escape( $asset1->{uri} );
